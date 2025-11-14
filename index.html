@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacogenomics Voice Translation - Lab 11</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* Input Section */
+        .input-section {
+            margin-bottom: 25px;
+        }
+
+        .input-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .input-container {
+            position: relative;
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .input-container:focus-within {
+            border-color: #667eea;
+            background: white;
+        }
+
+        .input-box {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            color: #333;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .input-box::placeholder {
+            color: #999;
+        }
+
+        .voice-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mic-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .mic-button:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .mic-button.listening {
+            background: #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+            }
+            50% { 
+                transform: scale(1.08);
+                box-shadow: 0 4px 20px rgba(239, 68, 68, 0.6);
+            }
+        }
+
+        .waveform {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            height: 30px;
+        }
+
+        .bar {
+            width: 3px;
+            background: #667eea;
+            border-radius: 2px;
+            height: 8px;
+            transition: height 0.1s ease;
+        }
+
+        .waveform.active .bar {
+            animation: wave 0.8s ease-in-out infinite;
+        }
+
+        .bar:nth-child(1) { animation-delay: 0s; }
+        .bar:nth-child(2) { animation-delay: 0.1s; }
+        .bar:nth-child(3) { animation-delay: 0.2s; }
+        .bar:nth-child(4) { animation-delay: 0.3s; }
+        .bar:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 8px; }
+            50% { height: 28px; }
+        }
+
+        /* Translate Button */
+        .translate-button {
+            width: 100%;
+            padding: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+        }
+
+        .translate-button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .translate-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .translate-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        /* Output Section */
+        .output-section {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 25px;
+            min-height: 150px;
+            display: none;
+        }
+
+        .output-section.visible {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .output-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #10b981;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .play-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: #10b981;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .play-button:hover:not(:disabled) {
+            background: #059669;
+            transform: scale(1.05);
+        }
+
+        .play-button.playing {
+            background: #ef4444;
+            animation: playing 0.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes playing {
+            from { transform: scale(1); }
+            to { transform: scale(1.08); }
+        }
+
+        .play-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .output-text {
+            color: #333;
+            line-height: 1.8;
+            font-size: 16px;
+        }
+
+        .output-text.empty {
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Status Messages */
+        .status {
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status.visible {
+            display: block;
+        }
+
+        .status.info {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #999;
+            font-size: 12px;
+        }
+
+        /* Demo Info Box */
+        .demo-info {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #92400e;
+        }
+
+        .demo-info strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #78350f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Pharmacogenomics Translator</h1>
+            <p class="subtitle">Medical Terminology → Plain Language</p>
+            <span class="badge">Lab 11 Demo</span>
+        </div>
+
+        <div class="demo-info">
+            <strong>🎯 Demo Mode</strong>
+            This interface shows voice + text input/output. In production, it will connect to your translation API.
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <!-- Input Section -->
+        <div class="input-section">
+            <div class="input-label">Enter Medical Term</div>
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    class="input-box" 
+                    id="inputBox" 
+                    placeholder="Type or speak medical terminology..."
+                    autocomplete="off"
+                >
+                <div class="voice-controls">
+                    <div class="waveform" id="waveform">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                    <button class="mic-button" id="micButton" title="Click to speak">
+                        🎤
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button class="translate-button" id="translateButton">
+            Translate to Plain Language
+        </button>
+
+        <!-- Output Section -->
+        <div class="output-section" id="outputSection">
+            <div class="output-header">
+                <div class="output-label">Plain Language Translation</div>
+                <button class="play-button" id="playButton" title="Listen to translation">
+                    ▶️
+                </button>
+            </div>
+            <div class="output-text" id="outputText"></div>
+        </div>
+
+        <div class="footer">
+            Cornell Medical School • Lab 11 • Pharmacogenomics Project 2025
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let state = {
+            isListening: false,
+            isPlaying: false,
+            currentInput: '',
+            currentOutput: '',
+            recognition: null,
+            synthesis: window.speechSynthesis
+        };
+
+        // DOM Elements
+        const elements = {
+            inputBox: document.getElementById('inputBox'),
+            micButton: document.getElementById('micButton'),
+            waveform: document.getElementById('waveform'),
+            translateButton: document.getElementById('translateButton'),
+            outputSection: document.getElementById('outputSection'),
+            outputText: document.getElementById('outputText'),
+            playButton: document.getElementById('playButton'),
+            status: document.getElementById('status')
+        };
+
+        // Initialize Speech Recognition
+        function initSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                state.recognition = new SpeechRecognition();
+                state.recognition.continuous = false;
+                state.recognition.interimResults = false;
+                state.recognition.lang = 'en-US';
+
+                state.recognition.onstart = () => {
+                    state.isListening = true;
+                    elements.micButton.classList.add('listening');
+                    elements.waveform.classList.add('active');
+                    showStatus('🎤 Listening... speak now', 'info');
+                };
+
+                state.recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    elements.inputBox.value = transcript;
+                    state.currentInput = transcript;
+                    showStatus('✅ Speech captured!', 'success');
+                };
+
+                state.recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    let errorMsg = 'Speech recognition error. Please try again.';
+                    
+                    if (event.error === 'not-allowed') {
+                        errorMsg = 'Microphone access denied. Please allow microphone in browser settings.';
+                    } else if (event.error === 'no-speech') {
+                        errorMsg = 'No speech detected. Please try again.';
+                    }
+                    
+                    showStatus('❌ ' + errorMsg, 'error');
+                    resetVoiceUI();
+                };
+
+                state.recognition.onend = () => {
+                    resetVoiceUI();
+                };
+            } else {
+                showStatus('⚠️ Speech recognition not supported. Please use Chrome or Edge.', 'error');
+                elements.micButton.disabled = true;
+            }
+        }
+
+        // Event Listeners
+        elements.micButton.addEventListener('click', () => {
+            if (!state.recognition) return;
+            
+            if (state.isListening) {
+                state.recognition.stop();
+            } else {
+                state.recognition.start();
+            }
+        });
+
+        elements.translateButton.addEventListener('click', () => {
+            const input = elements.inputBox.value.trim();
+            
+            if (!input) {
+                showStatus('⚠️ Please enter a medical term', 'error');
+                return;
+            }
+
+            // Simulate translation (in production, call your API here)
+            translateText(input);
+        });
+
+        elements.playButton.addEventListener('click', () => {
+            if (state.currentOutput) {
+                speakText(state.currentOutput);
+            }
+        });
+
+        elements.inputBox.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                elements.translateButton.click();
+            }
+        });
+
+        // Translation function (mock - replace with actual API call)
+        function translateText(input) {
+            showStatus('🔄 Translating...', 'info');
+            elements.translateButton.disabled = true;
+
+            // Simulate API delay
+            setTimeout(() => {
+                // Mock translation - In production, replace with: 
+                // fetch('/api/translate', { method: 'POST', body: JSON.stringify({ text: input }) })
+                
+                const mockTranslation = generateMockTranslation(input);
+                displayTranslation(mockTranslation);
+                
+                elements.translateButton.disabled = false;
+                showStatus('✅ Translation complete!', 'success');
+            }, 800);
+        }
+
+        // Mock translation generator (remove in production)
+        function generateMockTranslation(medicalTerm) {
+            const translations = {
+                'myocardial infarction': 'A heart attack - when blood flow to the heart muscle is blocked, causing tissue damage.',
+                'hypertension': 'High blood pressure - when the force of blood against artery walls is consistently too high.',
+                'diabetes mellitus': 'A condition where the body cannot properly process sugar, leading to high blood sugar levels.',
+                'default': `Translation for "${medicalTerm}": This would be the plain language explanation of the medical term. In production, this comes from your pharmacogenomics database.`
+            };
+
+            return translations[medicalTerm.toLowerCase()] || translations.default;
+        }
+
+        // Display translation
+        function displayTranslation(translation) {
+            state.currentOutput = translation;
+            elements.outputText.textContent = translation;
+            elements.outputText.classList.remove('empty');
+            elements.outputSection.classList.add('visible');
+            elements.playButton.disabled = false;
+        }
+
+        // Text-to-speech
+        function speakText(text) {
+            state.synthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+
+            utterance.onstart = () => {
+                state.isPlaying = true;
+                elements.playButton.classList.add('playing');
+                elements.playButton.textContent = '⏸️';
+            };
+
+            utterance.onend = () => {
+                state.isPlaying = false;
+                elements.playButton.classList.remove('playing');
+                elements.playButton.textContent = '▶️';
+            };
+
+            utterance.onerror = (event) => {
+                console.error('Speech synthesis error:', event);
+                state.isPlaying = false;
+                elements.playButton.classList.remove('playing');
+                elements.playButton.textContent = '▶️';
+                showStatus('❌ Audio playback error', 'error');
+            };
+
+            state.synthesis.speak(utterance);
+        }
+
+        // UI Helper Functions
+        function resetVoiceUI() {
+            state.isListening = false;
+            elements.micButton.classList.remove('listening');
+            elements.waveform.classList.remove('active');
+        }
+
+        function showStatus(message, type) {
+            elements.status.textContent = message;
+            elements.status.className = 'status visible ' + type;
+            
+            setTimeout(() => {
+                elements.status.classList.remove('visible');
+            }, 3000);
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            initSpeechRecognition();
+            console.log('Voice interface initialized');
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (state.synthesis) {
+                state.synthesis.cancel();
+            }
+        });
+    </script>
+</body>
+</html>
